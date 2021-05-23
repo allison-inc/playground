@@ -1,0 +1,12 @@
+name: xx
+on:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hello World
+        run: echo 'Hello World'
