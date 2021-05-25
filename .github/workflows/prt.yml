@@ -16,9 +16,10 @@ jobs:
           name: thing
           path: a
 
-  main:
+  upload:
     environment: allisoninc/node-cache upload
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - uses: actions/download-artifact@v2
