@@ -52,24 +52,19 @@ jobs:
           set -x
           git remote add cache "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY%/*}/node-cache"
 
-          fail=0
-          # for each commit that changes either package.json or node_modules...
-          for commit in $(git log --full-history --format=%H "${HEAD_SHA}" --not "${BASE_SHA}" -- \
-                          package.json node_modules); do
+          # for each commit in the PR...
+          for commit in $(git log --full-history --format=%H "${HEAD_SHA}" --not "${BASE_SHA}" --reverse); do
               # ... check that package.json and node_modules/.package.json are in sync
               node_modules="$(git rev-parse "${commit}:node_modules")"
               package_json="$(git rev-parse "${commit}:package.json")"
               if ! git fetch cache "sha-${node_modules}"; then
                   echo "Commit ${commit} has node_modules ${node_modules} which isn't on the server" >&2
-                  fail=1
-              else
-                  node_modules_package_json="$(git rev-parse "${node_modules}:.package.json")"
-                  if [ "${package_json}" != "${node_modules_package_json}" ]; then
-                      printf "Commit %s package.json and node_modules aren't in sync\n\n" "${commit}" >&2
-                      git show --stat "${commit}" >&2
-                      fail=1
-                  fi
+                  exit 1
+                fi
+              node_modules_package_json="$(git rev-parse "${node_modules}:.package.json")"
+              if [ "${package_json}" != "${node_modules_package_json}" ]; then
+                  printf "Commit %s package.json and node_modules aren't in sync\n\n" "${commit}" >&2
+                  git show --stat "${commit}" >&2
+                  exit 1
               fi
           done
-
-          exit "${fail}"
