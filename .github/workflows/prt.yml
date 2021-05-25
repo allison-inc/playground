@@ -6,8 +6,17 @@ on:
 
 jobs:
   main:
+    environment: allisoninc/node-cache upload
     runs-on: ubuntu-latest
 
     steps:
       - name: Hello World
         run: echo 'Hello World'
+
+      - name: Depoy!
+        run: |
+          echo '${{ secrets.SSH_PRIVATE_KEY }}' > private-key
+          chmod 600 private-key
+          ssh -i private-key git@github.com
+
+
