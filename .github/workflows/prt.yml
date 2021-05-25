@@ -5,13 +5,28 @@ on:
       - abc
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create a file
+        run: touch a
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: thing
+          path: a
+
   main:
     environment: allisoninc/node-cache upload
     runs-on: ubuntu-latest
 
     steps:
-      - name: Hello World
-        run: echo 'Hello World'
+      - uses: actions/download-artifact@v2
+        with:
+          name: thing
+
+      - name: lessee
+        run: ls -lR
 
       - name: Depoy!
         run: |
