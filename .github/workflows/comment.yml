@@ -1,4 +1,4 @@
-name: "npm install" runner
+name: npm install runner
 
 on:
   issue_comment:
