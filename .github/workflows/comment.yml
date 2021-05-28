@@ -1,27 +1,21 @@
-name: Issue comments
+name: "npm install" runner
 
 on:
   issue_comment:
     types: [created]
     
 jobs:
-  test:
+  start:
     runs-on: ubuntu-20.04
+    permissions:
+      issues: write
     steps:
-      - name: Hello
-        run: echo 'Hello'
-
-      - name: Debug
-        uses: actions/github-script@v4
-        with:
-          script: console.log(context);
-
       - name: Startup
         uses: actions/github-script@v4
         with:
           script: |
             // Make sure we're being spoken to
-            if (context.payload.comment.body !== '/hi') {
+            if (context.payload.action !== 'created' || context.payload.comment.body !== '/hi') {
                 github.log.info('Not for us');
                 return;
             }
@@ -44,7 +38,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: context.issue.number,
-                    body: '>/hi\n\nThis command can only be used by users with write access to the repository'
+                    body: '>/hi\n\nThis command can only be used by users with write access to the repository.'
                 });                    
                 core.setFailed(`User ${context.payload.sender.login} has insufficient permissions`);
                 return;
@@ -57,3 +51,23 @@ jobs:
                 comment_id: context.payload.comment.id,
                 content: 'rocket'
             });
+
+  build:
+    needs: start
+    runs-on: ubuntu-20.04
+    permissions:
+      repo: read
+    steps:
+      - name: Nothing
+        run: true
+        
+  upload:
+    needs: build
+    runs-on: ubuntu-20.04
+    environment: node-cache upload
+    permissions:
+      repo: read
+      issues: write
+    steps:
+      - name: Nothing
+        run: true
