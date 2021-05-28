@@ -8,7 +8,7 @@ jobs:
   start:
     runs-on: ubuntu-20.04
     permissions:
-      issues: write
+      pull-requests: write
     outputs:
       interpretation: ${{ steps.interpret.outputs.result }}
     steps:
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-20.04
     environment: node-cache upload
     permissions:
-      issues: write
+      pull-requests: write
     steps:
       - name: Nothing
         run: true
@@ -84,7 +84,7 @@ jobs:
     if: ${{ failure() && needs.build.result != 'skipped' }}
     runs-on: ubuntu-20.04
     permissions:
-      issues: write
+      pull-requests: write
     steps:
       - name: Write failure comment
         uses: actions/github-script@v4
