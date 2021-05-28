@@ -15,6 +15,6 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            const { repo: { owner, repo }, sender: { login: username } } = context;
+            const { repo: { owner, repo }, payload: { sender: { login : username } } } = context;
             const permission = await github.repos.getCollaboratorPermissionLevel({ owner, repo, username });
             console.log(permission);
