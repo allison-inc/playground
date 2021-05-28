@@ -19,7 +19,7 @@ jobs:
           result-encoding: string
           script: |
             // Make sure we're being spoken to
-            if (context.payload.action !== 'created' || context.payload.comment.body !== '/hi') {
+            if (context.payload.action !== 'created' || !context.issue.pull_request || context.payload.comment.body !== '/hi') {
                 github.log.info('Not our command.');
                 return;
             }
