@@ -16,7 +16,12 @@ jobs:
         uses: actions/github-script@v4
         with:
           script: console.log(context);
-          
+
+      - name: Debug2
+        uses: actions/github-script@v4
+        with:
+          script: console.log(context.payload.issue.pull_request);
+
       - name: Interpret comment
         id: interpret
         uses: actions/github-script@v4
