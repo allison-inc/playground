@@ -1,0 +1,12 @@
+name: Issue comments
+
+on:
+  issue_comment:
+    types: [created]
+    
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Hello
+        run: echo 'Hello'
