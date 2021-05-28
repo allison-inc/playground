@@ -15,7 +15,7 @@ jobs:
         uses: actions/github-script@v4
         with:
           script: console.log(context);
-
+            github.issues.createComment({
       - name: Startup
         uses: actions/github-script@v4
         with:
@@ -40,6 +40,12 @@ jobs:
                     comment_id: context.payload.comment.id,
                     content: 'confused'
                 });
+                await github.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_mumber: context.issue.number,
+                    body: '>/hi\n\nThis command can only be used by users with write access to the repository'
+                });                    
                 core.setFailed(`User ${context.payload.sender.login} has insufficient permissions`);
                 return;
             }
