@@ -10,3 +10,11 @@ jobs:
     steps:
       - name: Hello
         run: echo 'Hello'
+
+      - name: Check permission
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const { repository: { owner, repo }, sender: { login: username } } = context.event;
+            const permission = await github.repos.getCollaboratorPermissionLevel({ owner, repo, username });
+            console.log(permission);
