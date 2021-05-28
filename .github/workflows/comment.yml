@@ -59,7 +59,7 @@ jobs:
       actions: none
     steps:
       - name: Nothing
-        run: true
+        run: false
         
   upload:
     needs: build
@@ -70,3 +70,26 @@ jobs:
     steps:
       - name: Nothing
         run: true
+
+  fail:
+    needs: [build, upload]
+    if: failure()
+    runs-on: ubuntu-20.04
+    permissions:
+      issues: write
+    steps:
+      - name: Write failure comment
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const { repo: { owner, repo } } = context;
+            await github.reactions.createForIssueComment({
+                owner, repo,
+                comment_id: context.payload.comment.id,
+                content: 'confused'
+            });
+            await github.issues.createComment({
+                owner, repo,
+                issue_number: context.issue.number,
+                body: `The npm-install workflow failed.  See here for more information: https://github.com/${owner}/${repo}/actions/runs/${context.runID}`
+            });                    
