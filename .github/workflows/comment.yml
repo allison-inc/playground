@@ -11,10 +11,43 @@ jobs:
       - name: Hello
         run: echo 'Hello'
 
-      - name: Check permission
-        uses: actions/github-script@v3
+      - name: Debug
+        uses: actions/github-script@v4
+        with:
+          script: console.log(context);
+
+      - name: Startup
+        uses: actions/github-script@v4
         with:
           script: |
-            const { repo: { owner, repo }, payload: { sender: { login : username } } } = context;
-            const response = await github.repos.getCollaboratorPermissionLevel({ owner, repo, username });
-            console.log(response.data.permission);
+            // Make sure we're being spoken to
+            if (context.payload.comment.body !== '/hi') {
+                github.log.info('Not for us');
+                return;
+            }
+             
+            // Check the permissions of the sender 
+            const response = await github.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.payload.sender.login
+            });
+            const permission = response.data.permission;
+            if (permission !== 'admin' && permission !== 'write') {
+                await github.reactions.createForIssueComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: context.payload.comment.id,
+                    content: 'confused'
+                });
+                core.setFailed(`User ${context.payload.sender.login} has insufficient permissions`);
+                return;
+            }
+            
+            // Indicate that we're about to start work
+            await github.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'eyes'
+            });
