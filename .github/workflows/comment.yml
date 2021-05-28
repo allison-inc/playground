@@ -9,14 +9,18 @@ jobs:
     runs-on: ubuntu-20.04
     permissions:
       issues: write
+    outputs:
+      interpretation: ${{ steps.interpret.outputs.result }}
     steps:
-      - name: Startup
+      - name: Interpret comment
+        id: interpret
         uses: actions/github-script@v4
         with:
+          result-encoding: string
           script: |
             // Make sure we're being spoken to
             if (context.payload.action !== 'created' || context.payload.comment.body !== '/hi') {
-                core.setFailed('Not our command.');
+                github.log.info('Not our command.');
                 return;
             }
              
@@ -27,7 +31,7 @@ jobs:
                 username: context.payload.sender.login
             });
             const permission = response.data.permission;
-            if (permission !== 'admin' && permission !== 'write') {
+            if (permission !== 'admn' && permission !== 'write') {
                 await github.reactions.createForIssueComment({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -51,9 +55,12 @@ jobs:
                 comment_id: context.payload.comment.id,
                 content: 'rocket'
             });
+            
+            return 'request-valid';
 
   build:
     needs: start
+    if: ${{ needs.start.outputs.interpretation == 'valid-request' }}
     runs-on: ubuntu-20.04
     permissions:
       actions: none
@@ -63,6 +70,7 @@ jobs:
         
   upload:
     needs: build
+    if: ${{ needs.build.result == 'success' }}
     runs-on: ubuntu-20.04
     environment: node-cache upload
     permissions:
@@ -72,8 +80,8 @@ jobs:
         run: true
 
   fail:
-    needs: [build, upload]
-    if: failure()
+    needs: [start, build, upload]
+    if: ${{ failure() && needs.build.result != 'skipped' }}
     runs-on: ubuntu-20.04
     permissions:
       issues: write
