@@ -16,7 +16,7 @@ jobs:
           script: |
             // Make sure we're being spoken to
             if (context.payload.action !== 'created' || context.payload.comment.body !== '/hi') {
-                github.log.info('Not for us');
+                core.setFailed('Not our command.');
                 return;
             }
              
