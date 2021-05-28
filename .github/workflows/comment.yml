@@ -86,7 +86,7 @@ jobs:
             await github.reactions.createForIssueComment({
                 owner, repo,
                 comment_id: context.payload.comment.id,
-                content: 'confused'
+                content: '-1'
             });
             await github.issues.createComment({
                 owner, repo,
