@@ -27,7 +27,7 @@ jobs:
                 username: context.payload.sender.login
             });
             const permission = response.data.permission;
-            if (permission !== 'amin' && permission !== 'write') {
+            if (permission !== 'admin' && permission !== 'write') {
                 await github.reactions.createForIssueComment({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
