@@ -43,7 +43,7 @@ jobs:
                 await github.issues.createComment({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
-                    issue_mumber: context.issue.number,
+                    issue_number: context.issue.number,
                     body: '>/hi\n\nThis command can only be used by users with write access to the repository'
                 });                    
                 core.setFailed(`User ${context.payload.sender.login} has insufficient permissions`);
