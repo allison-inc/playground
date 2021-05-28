@@ -91,5 +91,5 @@ jobs:
             await github.issues.createComment({
                 owner, repo,
                 issue_number: context.issue.number,
-                body: `The npm-install workflow failed.  See here for more information: https://github.com/${owner}/${repo}/actions/runs/${context.runID}`
+                body: `The npm-install workflow failed.  See here for more information: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
             });                    
