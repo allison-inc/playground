@@ -60,7 +60,7 @@ jobs:
 
   build:
     needs: start
-    if: ${{ needs.start.outputs.interpretation == 'valid-request' }}
+    if: ${{ needs.start.outputs.interpretation == 'request-valid' }}
     runs-on: ubuntu-20.04
     permissions:
       actions: none
