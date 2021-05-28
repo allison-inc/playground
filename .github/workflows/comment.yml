@@ -33,7 +33,7 @@ jobs:
                 username: context.payload.sender.login
             });
             const permission = response.data.permission;
-            if (permission !== 'admin' && permission !== 'write') {
+            if (permission !== 'amin' && permission !== 'write') {
                 await github.reactions.createForIssueComment({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -49,5 +49,5 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: context.payload.comment.id,
-                content: 'eyes'
+                content: 'rocket'
             });
