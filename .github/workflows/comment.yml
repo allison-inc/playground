@@ -31,7 +31,7 @@ jobs:
                 username: context.payload.sender.login
             });
             const permission = response.data.permission;
-            if (permission !== 'admn' && permission !== 'write') {
+            if (permission !== 'admin' && permission !== 'write') {
                 await github.reactions.createForIssueComment({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -42,7 +42,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: context.issue.number,
-                    body: '>/hi\n\nThis command can only be used by users with write access to the repository.'
+                    body: '> /hi\n\nThis command can only be used by users with write access to the repository.'
                 });                    
                 core.setFailed(`User ${context.payload.sender.login} has insufficient permissions`);
                 return;
@@ -99,5 +99,5 @@ jobs:
             await github.issues.createComment({
                 owner, repo,
                 issue_number: context.issue.number,
-                body: `The npm-install workflow failed.  See here for more information: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
+                body: `> /hi\n\nThe workflow failed.  See here for more information: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
             });                    
