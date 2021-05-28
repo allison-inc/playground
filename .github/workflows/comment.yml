@@ -12,6 +12,11 @@ jobs:
     outputs:
       interpretation: ${{ steps.interpret.outputs.result }}
     steps:
+      - name: Debug
+        uses: actions/github-script@v4
+        with:
+          script: console.log(context);
+          
       - name: Interpret comment
         id: interpret
         uses: actions/github-script@v4
