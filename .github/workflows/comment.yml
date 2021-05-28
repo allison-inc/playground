@@ -16,5 +16,5 @@ jobs:
         with:
           script: |
             const { repo: { owner, repo }, payload: { sender: { login : username } } } = context;
-            const permission = await github.repos.getCollaboratorPermissionLevel({ owner, repo, username });
-            console.log(permission);
+            const response = await github.repos.getCollaboratorPermissionLevel({ owner, repo, username });
+            console.log(response.data.permission);
