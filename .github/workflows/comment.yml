@@ -24,8 +24,8 @@ jobs:
           result-encoding: string
           script: |
             // Make sure we're being spoken to
-            if (context.payload.action !== 'created' || !context.issue.pull_request || context.payload.comment.body !== '/hi') {
-                github.log.info('Not our command.');
+            if (context.payload.action !== 'created' || !('pull_request' in context.issue) || context.payload.comment.body !== '/hi') {
+                console.log('Not our command.');
                 return;
             }
              
