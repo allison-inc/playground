@@ -11,7 +11,7 @@ jobs:
       pull-requests: write
     outputs:
       interpretation: ${{ fromJSON(steps.interpret.outputs.result).interpretation }}
-      build_sha: ${{ fromJSON(steps.interpret.outputs.result).build_sha }}
+      head_sha: ${{ fromJSON(steps.interpret.outputs.result).head_sha }}
     steps:
       - name: Debug
         uses: actions/github-script@v4
@@ -75,7 +75,7 @@ jobs:
                 content: 'rocket'
             });
             
-            return { interpretation: 'request-valid', build_sha: head_sha };
+            return { interpretation: 'request-valid', head_sha: head_sha };
             
   build:
     needs: start
