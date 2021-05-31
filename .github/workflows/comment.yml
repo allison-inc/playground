@@ -7,7 +7,7 @@ on:
 jobs:
   start:
     runs-on: ubuntu-20.04
-    timeout: 5
+    timeout-minutes: 5
     permissions:
       pull-requests: write
     env:
@@ -32,14 +32,15 @@ jobs:
           output-encoding: string
           script: |
             // Make sure we're being spoken to
-            if (context.payload.action !== 'created' || !('pull_request' in context.payload.issue) || context.payload.comment.body !== '/hi') {
+            const { action, issue, comment: { body, id: comment_id } } = context.payload;
+            if (!(action === 'created' && body === '/npm install' && 'pull_request' in issue)) {
                 // HACK: That's not really a "fail", but it's the easiest
                 // and safest way to make sure everything else gets skipped
                 core.setFailed('Not our command');
                 return;
             }
 
-            // Check the permissions of the sender 
+            // Check the permissions of the sender
             const permission_response = await github.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -57,7 +58,7 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: context.issue.number,
-                    body: '> /hi\n\nThis command can only be used by users with write access to the repository.'
+                    body: '> ${body}\n\nThis command can only be used by users with write access to the repository.'
                 });                    
                 core.setFailed(`User ${context.payload.sender.login} has insufficient permissions`);
                 return;
@@ -217,5 +218,5 @@ jobs:
             await github.issues.createComment({
                 owner, repo,
                 issue_number: context.issue.number,
-                body: `> /hi\n\nThe workflow failed.  See here for more information: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
+                body: `> /npm install\n\nThe workflow failed.  See here for more information: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
             });                    
