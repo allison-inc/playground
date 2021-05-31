@@ -10,7 +10,8 @@ jobs:
     permissions:
       pull-requests: write
     outputs:
-      interpretation: ${{ steps.interpret.outputs.result }}
+      interpretation: ${{ steps.interpret.outputs.result.interpretation }}
+      build_sha: ${{ steps.interpret.outputs.result.build_sha }}
     steps:
       - name: Debug
         uses: actions/github-script@v4
@@ -26,7 +27,6 @@ jobs:
         id: interpret
         uses: actions/github-script@v4
         with:
-          result-encoding: string
           script: |
             // Make sure we're being spoken to
             if (context.payload.action !== 'created' || !('pull_request' in context.payload.issue) || context.payload.comment.body !== '/hi') {
@@ -35,12 +35,12 @@ jobs:
             }
              
             // Check the permissions of the sender 
-            const response = await github.repos.getCollaboratorPermissionLevel({
+            const permission_response = await github.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 username: context.payload.sender.login
             });
-            const permission = response.data.permission;
+            const permission = permission_response.data.permission;
             if (permission !== 'admin' && permission !== 'write') {
                 await github.reactions.createForIssueComment({
                     owner: context.repo.owner,
@@ -58,6 +58,14 @@ jobs:
                 return;
             }
             
+            // Figure out what we should be building, exactly.
+            const pull_response = github.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: issue_number
+            });
+            const head_sha = pull_response.data.pull_request.head.sha;
+            
             // Indicate that we're about to start work
             await github.reactions.createForIssueComment({
                 owner: context.repo.owner,
@@ -66,7 +74,7 @@ jobs:
                 content: 'rocket'
             });
             
-            return 'request-valid';
+            return { interpretation: 'request-valid', build_sha: head_sha };
 
   build:
     needs: start
@@ -86,6 +94,11 @@ jobs:
     permissions:
       pull-requests: write
     steps:
+      - name: Debug
+        uses: actions/github-script@v4
+        with:
+          script: console.log(${{ toJSON(needs) }});
+        
       - name: Nothing
         run: true
 
