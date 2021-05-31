@@ -62,7 +62,7 @@ jobs:
             const pull_response = github.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number: issue_number
+                pull_number: context.issue.number
             });
             const head_sha = pull_response.data.pull_request.head.sha;
             
