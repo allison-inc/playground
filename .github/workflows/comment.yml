@@ -222,7 +222,7 @@ jobs:
           script: |
             const fs = require('fs');
             
-            body = `> /npm-install
+            body = `> /npm install
             
             \`node_modules\` rebuild complete.  The following commands will incorporate the changes locally:
             
