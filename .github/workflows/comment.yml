@@ -112,6 +112,7 @@ jobs:
   build:
     needs: start
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
     permissions:
       pull-requests: none
     steps:
@@ -163,11 +164,10 @@ jobs:
 
             git init -b main
 
-            git config credential.helper store
             git config user.name "GitHub Workflow"
             git config user.email "cockpituous@cockpit-project.org"
             
-            git remote add cache "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY%/*}/node-cache"
+            git remote add cache "ssh://git@github.com/${GITHUB_REPOSITORY%/*}/node-cache"
             
       - name: Write package.json
         uses: actions/github-script@v3
@@ -194,12 +194,27 @@ jobs:
           rm artifact/package.json
           mv package.json node_modules/.package.json
           mv artifact/package-lock.json node_modules/.package-lock.json
+          cat - artifact/npm-install.log > commit-message <<EOF
+          PR: ${{ github.issue.html_url }}
+          
+          EOF
+          rm artifact/npm-install.log
+          rmdir artifact
           echo /.cache >> node_modules/.gitignore
           git --work-tree node_modules add --all
-          git --work-tree node_modules commit --quiet -F - < artifact/npm-install.log
-          rm artifact/npm-install.log
+          git --work-tree node_modules commit --quiet -F - < commit-message
           rm -rf node_modules
-          rmdir artifact
+          
+      - name: Upload git commit
+        run: |
+          sha="$(git rev-parse HEAD)"
+          git tag "sha-${sha}"
+
+          eval $(ssh-agent)
+          ssh-add - <<< '${{ secrets.NODE_CACHE_DEPLOY_KEY }}'
+          git push cache tag "sha-${sha}"
+          ssh-add -D
+          ssh-agent -k
 
   fail:
     needs: [start, build, upload]
