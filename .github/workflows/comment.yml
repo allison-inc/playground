@@ -77,18 +77,56 @@ jobs:
             
             return { interpretation: 'request-valid', build_sha: head_sha };
             
-      - name: Show output
-        run: echo '${{ toJSON(steps.interpret.outputs) }}'
-
   build:
     needs: start
     if: ${{ needs.start.outputs.interpretation == 'request-valid' }}
     runs-on: ubuntu-20.04
     permissions:
-      actions: none
+      metadata: read
+    env:
+      GIT_DIR: git-dir.git
+      HEAD_SHA: ${{ needs.start.outputs.head_sha }}
+      BASE_SHA: ${{ github.sha }}
     steps:
-      - name: Nothing
-        run: false
+      - name: Fetch relevant commits
+        run: |
+            set -ux
+            git init -b main
+            git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+            git fetch origin "${BASE_SHA}" "${HEAD_SHA}"
+            
+      - name: Ensure PR is up to date with package.json on the base branch
+        run: git log --exit-code "${BASE_SHA}" --not "${HEAD_SHA}" -- package.json
+        
+      - name: Extract package.json
+        run: git cat-file blob "${HEAD_SHA}:package.json" > package.json
+
+      - name: npm install
+        run: |
+          set -ux
+
+          exec >&2 # close workflow command channel
+
+          container="$(docker create -u node -w /home/node node:14 npm install --ignore-scripts)"
+          docker cp package.json "${container}:/home/node/package.json"
+          docker start -a "${container}" 2>&1 | tee npm-install.log
+          docker cp "${container}:/home/node/package.json" npm-package.json
+          docker cp "${container}:/home/node/package-lock.json" package-lock.json
+          docker cp "${container}:/home/node/node_modules" - > node_modules.tar
+          docker rm -f "${container}"
+          
+      - name: Ensure no changes to package.json
+        run: diff -u package.json npm-package.json
+
+      - uses: actions/upload-artifact@v2
+        name: Create artifact
+        with:
+          path: |
+            npm-install.log
+            package.json
+            package-lock.json
+            node_modules.tar
+          retention-days: 1
         
   upload:
     needs: build
@@ -104,7 +142,7 @@ jobs:
           script: console.log(${{ toJSON(needs) }});
         
       - name: Nothing
-        run: true
+        run: false
 
   fail:
     needs: [start, build, upload]
