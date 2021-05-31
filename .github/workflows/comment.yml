@@ -78,7 +78,7 @@ jobs:
             return { interpretation: 'request-valid', build_sha: head_sha };
             
       - name: Show output
-        run: echo '${{ steps.interpret.outputs }}'
+        run: echo '${{ toJSON(steps.interpret.outputs) }}'
 
   build:
     needs: start
