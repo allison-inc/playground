@@ -59,7 +59,7 @@ jobs:
             }
             
             // Figure out what we should be building, exactly.
-            const pull_response = github.pulls.get({
+            const pull_response = await github.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: context.issue.number
