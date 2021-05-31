@@ -3,15 +3,17 @@ name: npm install runner
 on:
   issue_comment:
     types: [created]
-    
+
 jobs:
   start:
     runs-on: ubuntu-20.04
+    timeout: 5
     permissions:
       pull-requests: write
-    outputs:
-      interpretation: ${{ fromJSON(steps.interpret.outputs.result).interpretation }}
-      head_sha: ${{ fromJSON(steps.interpret.outputs.result).head_sha }}
+    env:
+      GIT_DIR: git-dir.git
+      BASE_SHA: ${{ github.sha }}
+      
     steps:
       - name: Debug
         uses: actions/github-script@v4
@@ -27,13 +29,16 @@ jobs:
         id: interpret
         uses: actions/github-script@v4
         with:
+          output-encoding: string
           script: |
             // Make sure we're being spoken to
             if (context.payload.action !== 'created' || !('pull_request' in context.payload.issue) || context.payload.comment.body !== '/hi') {
-                console.log('Not our command.');
+                // HACK: That's not really a "fail", but it's the easiest
+                // and safest way to make sure everything else gets skipped
+                core.setFailed('Not our command');
                 return;
             }
-             
+
             // Check the permissions of the sender 
             const permission_response = await github.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
@@ -57,16 +62,15 @@ jobs:
                 core.setFailed(`User ${context.payload.sender.login} has insufficient permissions`);
                 return;
             }
-            
+
             // Figure out what we should be building, exactly.
             const pull_response = await github.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: context.issue.number
             });
-            console.log(pull_response);
-            const head_sha = pull_response.data.head.sha;
-            
+            core.exportVariable('HEAD_SHA', pull_response.data.head.sha);
+
             // Indicate that we're about to start work
             await github.reactions.createForIssueComment({
                 owner: context.repo.owner,
@@ -74,32 +78,43 @@ jobs:
                 comment_id: context.payload.comment.id,
                 content: 'rocket'
             });
+
+            return 'request-valid';
             
-            return { interpretation: 'request-valid', head_sha: head_sha };
-            
-  build:
-    needs: start
-    if: ${{ needs.start.outputs.interpretation == 'request-valid' }}
-    runs-on: ubuntu-20.04
-    permissions:
-      pull-requests: none
-    env:
-      GIT_DIR: git-dir.git
-      HEAD_SHA: ${{ needs.start.outputs.head_sha }}
-      BASE_SHA: ${{ github.sha }}
-    steps:
-      - name: Fetch relevant commits
+      - name: Set up work area
         run: |
-            set -ux
-            git init -b main
-            git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
-            git fetch origin "${BASE_SHA}" "${HEAD_SHA}"
-            
+          set -ux
+          git init -b main
+          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+          git fetch origin "${BASE_SHA}" "${HEAD_SHA}"
+
       - name: Ensure PR is up to date with package.json on the base branch
         run: git log --exit-code "${BASE_SHA}" --not "${HEAD_SHA}" -- package.json
         
       - name: Extract package.json
         run: git cat-file blob "${HEAD_SHA}:package.json" > package.json
+        
+      - name: Store package.json as output variable
+        id: package_json
+        uses: actions/github-script@v3
+        with:
+          script: return require('fs').readFileSync('package.json');
+          result-encoding: string
+
+    outputs:
+      interpretation: ${{ steps.interpret.result }}
+      package_json: ${{ steps.package_json.result }}
+            
+  build:
+    needs: start
+    runs-on: ubuntu-20.04
+    permissions:
+      pull-requests: none
+    steps:
+      - name: Write package.json
+        uses: actions/github-script@v3
+        with:
+          script: require('fs').writeFileSync("package.json", ${{ toJSON(needs.start.outputs.package_json) }});
 
       - name: npm install
         run: |
@@ -121,6 +136,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         name: Create artifact
         with:
+          name: npm-install-results
           path: |
             npm-install.log
             package.json
@@ -129,24 +145,61 @@ jobs:
           retention-days: 1
         
   upload:
-    needs: build
-    if: ${{ needs.build.result == 'success' }}
+    needs: [start, build]
     runs-on: ubuntu-20.04
     environment: node-cache upload
     permissions:
       pull-requests: write
+    env:
+      GIT_DIR: git-dir.git
     steps:
-      - name: Debug
-        uses: actions/github-script@v4
+      - name: Set up work area
+        run: |
+            set -ux
+
+            git init -b main
+
+            git config credential.helper store
+            git config user.name "GitHub Workflow"
+            git config user.email "cockpituous@cockpit-project.org"
+            
+            git remote add cache "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY%/*}/node-cache"
+            
+      - name: Write package.json
+        uses: actions/github-script@v3
         with:
-          script: console.log(${{ toJSON(needs) }});
-        
-      - name: Nothing
-        run: false
+          script: require('fs').writeFileSync("package.json", ${{ toJSON(needs.start.outputs.package_json) }});
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: npm-install-results
+          path: artifact
+  
+      - name: Verify artifact package.json matches request
+        run: diff -u package.json artifact/package.json
+
+      - name: Unpack node_modules tar
+        run: |
+          set -ux
+          tar -xf artifact/node_modules.tar --exclude '.git*' node_modules
+          rm artifact/node_modules.tar
+
+      - name: Stage git commit
+        run: |
+          set -ux
+          rm artifact/package.json
+          mv package.json node_modules/.package.json
+          mv artifact/package-lock.json node_modules/.package-lock.json
+          echo /.cache >> node_modules/.gitignore
+          git --work-tree node_modules add --all
+          git --work-tree node_modules commit --quiet -F - < artifact/npm-install.log
+          rm artifact/npm-install.log
+          rm -rf node_modules
+          rmdir artifact
 
   fail:
     needs: [start, build, upload]
-    if: ${{ failure() && needs.build.result != 'skipped' }}
+    if: ${{ failure() && needs.start.outputs.interpretation == 'request-valid' }}
     runs-on: ubuntu-20.04
     permissions:
       pull-requests: write
