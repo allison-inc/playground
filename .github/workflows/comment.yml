@@ -195,7 +195,7 @@ jobs:
           mv package.json node_modules/.package.json
           mv artifact/package-lock.json node_modules/.package-lock.json
           cat - artifact/npm-install.log > commit-message <<EOF
-          PR: ${{ github.issue.html_url }}
+          PR: ${{ github.event.issue.html_url }}
           
           EOF
           rm artifact/npm-install.log
