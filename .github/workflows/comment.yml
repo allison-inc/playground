@@ -64,6 +64,7 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: context.issue.number
             });
+            console.log(pull_response);
             const head_sha = pull_response.data.pull_request.head.sha;
             
             // Indicate that we're about to start work
