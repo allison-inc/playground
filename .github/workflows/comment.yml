@@ -65,7 +65,7 @@ jobs:
                 pull_number: context.issue.number
             });
             console.log(pull_response);
-            const head_sha = pull_response.data.pull_request.head.sha;
+            const head_sha = pull_response.data.head.sha;
             
             // Indicate that we're about to start work
             await github.reactions.createForIssueComment({
