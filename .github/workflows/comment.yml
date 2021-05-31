@@ -106,8 +106,8 @@ jobs:
         run: echo '${{ toJSON(steps) }}'
 
     outputs:
-      interpretation: ${{ steps.interpret.result }}
-      package_json: ${{ steps.package_json.result }}
+      interpretation: ${{ steps.interpret.outputs.result }}
+      package_json: ${{ steps.package_json.outputs.result }}
             
   build:
     needs: start
