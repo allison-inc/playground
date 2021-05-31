@@ -10,8 +10,8 @@ jobs:
     permissions:
       pull-requests: write
     outputs:
-      interpretation: ${{ steps.interpret.outputs.result.interpretation }}
-      build_sha: ${{ steps.interpret.outputs.result.build_sha }}
+      interpretation: ${{ fromJSON(steps.interpret.outputs.result).interpretation }}
+      build_sha: ${{ fromJSON(steps.interpret.outputs.result).build_sha }}
     steps:
       - name: Debug
         uses: actions/github-script@v4
