@@ -205,16 +205,40 @@ jobs:
           git --work-tree node_modules commit --quiet -F - < commit-message
           rm -rf node_modules
           
+          git rev-parse HEAD > sha
+          git tag "sha-$(cat sha)"
+
       - name: Upload git commit
         run: |
-          sha="$(git rev-parse HEAD)"
-          git tag "sha-${sha}"
-
           eval $(ssh-agent)
           ssh-add - <<< '${{ secrets.NODE_CACHE_DEPLOY_KEY }}'
-          git push cache tag "sha-${sha}"
+          git push cache tag "sha-$(cat sha)"
           ssh-add -D
           ssh-agent -k
+
+      - name: Comment on PR
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const fs = require('fs');
+            
+            body = `> /npm-install
+            
+            \`node_modules\` rebuild complete.  The following commands will incorporate the changes locally:
+            
+            \`\`\`sh
+            tools/node-modules checkout ${fs.readFileSync('sha')}
+            git commit -om 'node_modules changes' node_modules
+            \`\`\`
+            
+            ...at which point you should rebase your changes.`;
+            
+            await github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
 
   fail:
     needs: [start, build, upload]
