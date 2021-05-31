@@ -29,7 +29,7 @@ jobs:
         id: interpret
         uses: actions/github-script@v4
         with:
-          output-encoding: string
+          result-encoding: string
           script: |
             // Make sure we're being spoken to
             const { action, issue, comment: { body, id: comment_id } } = context.payload;
@@ -101,6 +101,9 @@ jobs:
         with:
           script: return require('fs').readFileSync('package.json');
           result-encoding: string
+          
+      - name: Show steps
+        run: echo '${{ toJSON(steps) }}'
 
     outputs:
       interpretation: ${{ steps.interpret.result }}
