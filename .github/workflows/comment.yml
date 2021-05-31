@@ -82,7 +82,7 @@ jobs:
     if: ${{ needs.start.outputs.interpretation == 'request-valid' }}
     runs-on: ubuntu-20.04
     permissions:
-      metadata: read
+      pull-requests: none
     env:
       GIT_DIR: git-dir.git
       HEAD_SHA: ${{ needs.start.outputs.head_sha }}
