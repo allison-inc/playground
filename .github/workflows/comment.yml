@@ -205,7 +205,7 @@ jobs:
           git --work-tree node_modules commit --quiet -F - < commit-message
           rm -rf node_modules
           
-          git rev-parse HEAD > sha
+          echo "$(git rev-parse HEAD)" > sha
           git tag "sha-$(cat sha)"
 
       - name: Upload git commit
