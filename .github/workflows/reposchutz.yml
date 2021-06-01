@@ -60,11 +60,20 @@ jobs:
               if ! git fetch cache "sha-${node_modules}"; then
                   echo "Commit ${commit} has node_modules ${node_modules} which isn't on the server" >&2
                   exit 1
-                fi
+              fi
+              [ "$(git rev-parse FETCH_HEAD)" = "${node_modules}" ]
+              [ "$(git rev-parse "sha-${node_modules}")" = "${node_modules}" ]
               node_modules_package_json="$(git rev-parse "${node_modules}:.package.json")"
               if [ "${package_json}" != "${node_modules_package_json}" ]; then
                   printf "Commit %s package.json and node_modules aren't in sync\n\n" "${commit}" >&2
                   git show --stat "${commit}" >&2
                   exit 1
               fi
+          done
+
+          # additionally, check that each individual node_modules change (if any) originated here
+          for commit in $(git log --full-history --format=%H "${HEAD_SHA}" --not "${BASE_SHA}" -- node_modules); do
+              node_modules="$(git rev-parse "${commit}:node_modules")"
+              subject="$(git show -s --format=%s "${node_modules}")"
+              [ "${subject}" = 'PR: ${{ github.event.pull_request.html_url }}' ]
           done
