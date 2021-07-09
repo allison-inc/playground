@@ -1,0 +1,16 @@
+name: po-refresh
+on:
+  schedule:
+    # Run this on Tuesday evening (UTC), so that it's ready for release on
+    # Wednesday, with some spare time
+    - cron: '* * * * *'
+  # can be run manually on https://github.com/cockpit-project/cockpit/actions
+  workflow_dispatch:
+jobs:
+  po-refresh:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Debug
+        run: |
+          set +x
+          echo '${{ toJSON(github.event) }}'
